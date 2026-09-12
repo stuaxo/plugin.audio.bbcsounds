@@ -171,7 +171,8 @@ def report_progress(evt: prog_mon.ProgressEvent, version_pid: str, pid: str) -> 
     }
 
     try:
-        resp = fetch.post('https://rms.api.bbc.co.uk/v2/my/programmes/plays', json=post_data)
+        resp = fetch.post('https://rms.api.bbc.co.uk/v2/my/programmes/plays', json=post_data,
+                          session_name=fetch.SESSION_BEST_EFFORT)
     except AccountError:
         log("Abort progress monitoring; user is not signed in.")
         return False

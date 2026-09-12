@@ -384,7 +384,7 @@ def perform_sign_out():
     """
     sign_out_url = "https://account.bbc.com/signout"
     try:
-        fetch.get(sign_out_url, timeout=(2.5, 2))
+        fetch.get(sign_out_url, session_name=fetch.SESSION_BEST_EFFORT)
     except Exception as err:
         log("Failed to logout at the BCC: %r", err)
     cookie_jar = fetch.cookie_jar()

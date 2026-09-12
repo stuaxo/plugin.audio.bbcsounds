@@ -26,9 +26,11 @@ def handle_subscription(_, urn: str, operation: str):
     from resources.lib.favourites import favourites
 
     if operation == 'add':
-        resp = fetch.post('https://rms.api.bbc.co.uk/v2/my/activities', json={'urn': urn})
+        resp = fetch.post('https://rms.api.bbc.co.uk/v2/my/activities', json={'urn': urn},
+                          session_name=fetch.SESSION_BEST_EFFORT)
     elif operation == 'remove':
-        resp = fetch.delete('https://rms.api.bbc.co.uk/v2/my/activities/' + urn)
+        resp = fetch.delete('https://rms.api.bbc.co.uk/v2/my/activities/' + urn,
+                            session_name=fetch.SESSION_BEST_EFFORT)
     else:
         raise ValueError(f"Invalid subscription operation: '{operation}'.")
     resp.raise_for_status()
@@ -44,6 +46,7 @@ def remove_listening(plugin, urn, brand_title, episode_title):
             TXT_DLG_HEADER,
             plugin.translate(ID_MSG_REMOVE_LISTING_CONFIRM).format(title=full_title)):
         fetch.post('https://rms.api.bbc.co.uk/v2/my/programmes/plays/remove',
-                   json={"pid": urn_parts[-1], "resource_type": urn_parts[-2]}
+                   json={"pid": urn_parts[-1], "resource_type": urn_parts[-2]},
+                   session_name=fetch.SESSION_BEST_EFFORT
                    )
         xbmc.executebuiltin('Container.Refresh')
