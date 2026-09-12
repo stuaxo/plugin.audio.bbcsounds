@@ -8,6 +8,7 @@
 from __future__ import annotations
 import os
 import json
+from functools import cache
 from http.cookiejar import LWPCookieJar
 
 import requests
@@ -18,9 +19,23 @@ from resources.lib.exceptions import AccountError, GeoBlockError
 from resources.lib.log import log
 
 REQ_TIMEOUT = (3.5, 4)
+BEST_EFFORT_TIMEOUT = (2, 2)
+
+SESSION_DEFAULT = 'default'
+SESSION_BEST_EFFORT = 'best-effort'
+
+_SESSION_TIMEOUTS = {
+    SESSION_DEFAULT: REQ_TIMEOUT,
+    SESSION_BEST_EFFORT: BEST_EFFORT_TIMEOUT,
+}
 
 ID_MSG_SIGN_IN = 30321
 ID_MSG_GEOBLOCK = 30320
+
+
+@cache
+def get_session(name: str = SESSION_DEFAULT) -> requests.Session:
+    return requests.Session()
 
 
 def cookie_jar() -> LWPCookieJar:
@@ -39,18 +54,18 @@ def cookie_jar() -> LWPCookieJar:
     return cj
 
 
-def request(method: str, url: str, **kwargs) -> requests.Response:
+def request(method: str, url: str, session_name: str = SESSION_DEFAULT, **kwargs) -> requests.Response:
     save = False
-    kwargs.setdefault('timeout', REQ_TIMEOUT)
+    kwargs.setdefault('timeout', _SESSION_TIMEOUTS[session_name])
     try:
-        with requests.Session() as session:
-            session.cookies = cj = cookie_jar()
-            resp = session.request(method, url, **kwargs)
-            if resp.status_code == 401:
-                # Contrary to www pages, requests to RMS do not automatically refresh auth cookies.
-                if refresh_tokens(session):
-                    save = True
-                    resp = session.request(method, url, **kwargs)
+        session = get_session(session_name)
+        session.cookies = cj = cookie_jar()
+        resp = session.request(method, url, **kwargs)
+        if resp.status_code == 401:
+            # Contrary to www pages, requests to RMS do not automatically refresh auth cookies.
+            if refresh_tokens(session):
+                save = True
+                resp = session.request(method, url, **kwargs)
         resp.raise_for_status()
     except requests.HTTPError:
         try:
